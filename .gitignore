@@ -8,7 +8,7 @@
 *.so
 
 # PDF y txt #
-*.pdf
+
 *.txt
 *.idx
 
