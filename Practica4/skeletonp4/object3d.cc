@@ -48,7 +48,7 @@ void _object3D::draw_line()
 void _object3D::draw_fill()
 {
     glPolygonMode(GL_FRONT,GL_FILL);
-
+    //glEnable(GL_CULL_FACE); // Para que no se dibuje el interior del objeto
 
     glBegin(GL_TRIANGLES);
     for(unsigned int i=0;i<Triangles.size();i++)
@@ -58,7 +58,7 @@ void _object3D::draw_fill()
         glVertex3fv((GLfloat *) &Vertices[Triangles[i]._2]);
     }
     glEnd();
-
+    //glDisable(GL_CULL_FACE);
 
 }
 
@@ -72,6 +72,7 @@ void _object3D::draw_fill()
 void _object3D::draw_chess()
 {
     glPolygonMode(GL_FRONT,GL_FILL);
+    //glEnable(GL_CULL_FACE); // Para que no se dibuje el interior del objeto
 
     glBegin(GL_TRIANGLES);
     glColor3f(1,0.5,0); // Para que no se quede un triangulo del color del fill
@@ -80,9 +81,11 @@ void _object3D::draw_chess()
         glVertex3fv((GLfloat *) &Vertices[Triangles[i]._0]);
         glVertex3fv((GLfloat *) &Vertices[Triangles[i]._1]);
         glVertex3fv((GLfloat *) &Vertices[Triangles[i]._2]);
-        glColor3f(i%2,0.5,0);
+        glColor3f(i%2,0.5,0); // Se va cambiando de color en cada iteracion
     }
     glEnd();
+    //glDisable(GL_CULL_FACE);
+
 }
 
 void _object3D::calcular_normales_triangulos()
@@ -91,15 +94,15 @@ void _object3D::calcular_normales_triangulos()
     Normales_Triangulos.resize(Triangles.size());
     for(unsigned int i=0; i<Triangles.size(); i++)
     {
+        Normales_Triangulos[i]= _vertex3f(0.0, 0.0, 0.0);
         // Obtener dos vectores en el triángulo y calcular el producto vectorial
+        // cuya normal tiene que apuntar hacia fuera del objeto
         vec1=Vertices[Triangles[i]._1]-Vertices[Triangles[i]._0];
         vec2=Vertices[Triangles[i]._2]-Vertices[Triangles[i]._0];
-        normal=vec1.cross_product(vec2);
-        // Modulo
-        // float m = sqrt(normal.x*normal.x+normal.y*normal.y+normal.z*normal.z);
-        // Normalización
-        // Normales_Triangulos[i]= _vertex3f(normal.x/m, normal.y/m, normal.z/m);
-        Normales_Triangulos[i].normalize(); // Funcion para normalizar
+        normal=vec1.cross_product(vec2); // Producto vectorial de vec1 con vec2
+        // Metemos la normal calculada en el vector y llamamos a la funcion normalize()
+        Normales_Triangulos[i] = normal;
+        Normales_Triangulos[i].normalize();
     }
 }
 
@@ -128,132 +131,61 @@ void _object3D::calcular_normales_vertices()
     for(unsigned int i = 0; i < Vertices.size(); i++)
     {
         //Normalizar la normal a cada vertice
-        Normales_Vertices[i].normalize(); //función de vector<_vertex3f> para normalizar
+        Normales_Vertices[i].normalize(); //función para normalizar
     }
 }
 
 
 void _object3D::draw_flat_shading()
 {
-    /*
-        glEnable(GL_CULL_FACE);// Elimina de los calculos los triangulos que miren
-                             // hacia el otro lado del observador
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CW);  // Hace trampa y decide que las caras frontales son las
-                             // que están en sentido horario en vez de antihorario
-    */
+    calcular_normales_triangulos();
 
-        calcular_normales_triangulos();
-        glEnable(GL_LIGHTING);
-        glEnable(GL_NORMALIZE);
-        glShadeModel(GL_FLAT);
+    glEnable(GL_CULL_FACE);// Elimina de los calculos los triangulos que miren
+                         // hacia el otro lado del observador
 
-    /*        glEnable (GL_LIGHT0);
-            glLightfv (GL_LIGHT0, GL_POSITION, (GLfloat *) &luz_posicion);
-            glLightfv (GL_LIGHT0, GL_AMBIENT, (GLfloat *) &luz_ambiente);
-            glLightfv (GL_LIGHT0, GL_DIFFUSE, (GLfloat *) &luz_difusa);
-            glLightfv (GL_LIGHT0, GL_SPECULAR, (GLfloat *) &luz_especular);
-    */
-    /*
-            glEnable (GL_LIGHT1);
-            glLightfv (GL_LIGHT1, GL_AMBIENT, (GLfloat *) &luz_ambiente);
-            glLightfv (GL_LIGHT1, GL_DIFFUSE, (GLfloat *) &luz_difusa);
-            glLightfv (GL_LIGHT1, GL_SPECULAR, (GLfloat *) &luz_especular);
-            glLightfv (GL_LIGHT1, GL_POSITION, (GLfloat *) &luz_posicion);
-
-
-            glEnable (GL_LIGHT2);
-            glLightfv (GL_LIGHT2, GL_AMBIENT, (GLfloat *) &luz_ambiente);
-            glLightfv (GL_LIGHT2, GL_DIFFUSE, (GLfloat *) &luz_difusa);
-            glLightfv (GL_LIGHT2, GL_SPECULAR, (GLfloat *) &luz_especular);
-            glLightfv (GL_LIGHT2, GL_POSITION, (GLfloat *) &luz_posicion);
-    */
-
-        glEnable(GL_COLOR_MATERIAL);
-        //glColorMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE);
-        //glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (GLfloat *) &luz_ambiente);
-        //glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE);
-        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, (GLfloat *) &material_difusa);
-        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, (GLfloat *) &material_ambiente);
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, (GLfloat *) &material_especular);
-        glMaterialfv(GL_FRONT, GL_EMISSION, (GLfloat *) &material_emision);
-        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, material_brillo);
-
-        glPolygonMode(GL_FRONT,GL_FILL);
-        glBegin(GL_TRIANGLES);
-            for (unsigned int i=0;i < Triangles.size();i++)
-            {
-                glNormal3fv((GLfloat *) &Normales_Triangulos[i]);
-                glVertex3fv((GLfloat *) &Vertices[Triangles[i]._0]);
-                glVertex3fv((GLfloat *) &Vertices[Triangles[i]._1]);
-                glVertex3fv((GLfloat *) &Vertices[Triangles[i]._2]);
-            }
-        glEnd();
+    glEnable(GL_NORMALIZE); // Si no se llama a glNormalize, hay cambios bruscos en la iluminacion
+                            // y parece que esta buggeado
+    glShadeModel(GL_FLAT);
+    glPolygonMode(GL_FRONT,GL_FILL);
+    glBegin(GL_TRIANGLES);
+        for (unsigned int i=0;i < Triangles.size();i++)
+        {
+            glNormal3fv((GLfloat *) &Normales_Triangulos[i]); // Normal del triangulo i
+            glVertex3fv((GLfloat *) &Vertices[Triangles[i]._0]); // Vertices del triangulo i
+            glVertex3fv((GLfloat *) &Vertices[Triangles[i]._1]);
+            glVertex3fv((GLfloat *) &Vertices[Triangles[i]._2]);
+        }
+    glEnd();
 
     glDisable(GL_NORMALIZE);
-    glDisable(GL_LIGHTING);
-
+    glDisable(GL_CULL_FACE);
 
 }
 
 void _object3D::draw_smooth_shading()
 {
-/*
+    calcular_normales_vertices();
+
     glEnable(GL_CULL_FACE);// Elimina de los calculos los triangulos que miren
                          // hacia el otro lado del observador
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CW);  // Hace trampa y decide que las caras frontales son las
-                         // que están en sentido horario en vez de antihorario
-*/
-
-    calcular_normales_vertices();
-    glEnable(GL_LIGHTING);
-    glEnable(GL_NORMALIZE);
+    glEnable(GL_NORMALIZE); // Si no se llama a glNormalize, hay cambios bruscos en la iluminacion
+                            // y parece que esta buggeado
     glShadeModel(GL_SMOOTH);
 
-/*        glEnable (GL_LIGHT0);
-        glLightfv (GL_LIGHT0, GL_POSITION, (GLfloat *) &luz_posicion);
-        glLightfv (GL_LIGHT0, GL_AMBIENT, (GLfloat *) &luz_ambiente);
-        glLightfv (GL_LIGHT0, GL_DIFFUSE, (GLfloat *) &luz_difusa);
-        glLightfv (GL_LIGHT0, GL_SPECULAR, (GLfloat *) &luz_especular);
-*/
-        glEnable (GL_LIGHT1);
-        glLightfv (GL_LIGHT1, GL_AMBIENT, (GLfloat *) &luz_ambiente);
-        glLightfv (GL_LIGHT1, GL_DIFFUSE, (GLfloat *) &luz_difusa);
-        glLightfv (GL_LIGHT1, GL_SPECULAR, (GLfloat *) &luz_especular);
-        glLightfv (GL_LIGHT1, GL_POSITION, (GLfloat *) &luz_posicion);
-
-/*
-        glEnable (GL_LIGHT2);
-        glLightfv (GL_LIGHT2, GL_AMBIENT, (GLfloat *) &luz_ambiente);
-        glLightfv (GL_LIGHT2, GL_DIFFUSE, (GLfloat *) &luz_difusa);
-        glLightfv (GL_LIGHT2, GL_SPECULAR, (GLfloat *) &luz_especular);
-        glLightfv (GL_LIGHT2, GL_POSITION, (GLfloat *) &luz_posicion);
-*/
-
-    glEnable(GL_COLOR_MATERIAL);
-    //glColorMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE);
-    //glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (GLfloat *) &luz_ambiente);
-    //glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, (GLfloat *) &material_difusa);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, (GLfloat *) &material_ambiente);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, (GLfloat *) &material_especular);
-    glMaterialfv(GL_FRONT, GL_EMISSION, (GLfloat *) &material_emision);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, material_brillo);
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glBegin(GL_TRIANGLES);
-            for(unsigned int i = 0; i < Triangles.size(); i++)
-            {
-                glNormal3fv((GLfloat*) &Normales_Vertices[Triangles[i]._0]);
-                glVertex3fv((GLfloat*) &Vertices[Triangles[i]._0]);
-                glNormal3fv((GLfloat*) &Normales_Vertices[Triangles[i]._1]);
-                glVertex3fv((GLfloat*) &Vertices[Triangles[i]._1]);
-                glNormal3fv((GLfloat*) &Normales_Vertices[Triangles[i]._2]);
-                glVertex3fv((GLfloat*) &Vertices[Triangles[i]._2]);
-            }
-        glEnd();
+    glPolygonMode(GL_FRONT, GL_FILL);
+    glBegin(GL_TRIANGLES);
+        for(unsigned int i = 0; i < Triangles.size(); i++)
+        {
+            glNormal3fv((GLfloat*) &Normales_Vertices[Triangles[i]._0]);
+            glVertex3fv((GLfloat*) &Vertices[Triangles[i]._0]);
+            glNormal3fv((GLfloat*) &Normales_Vertices[Triangles[i]._1]);
+            glVertex3fv((GLfloat*) &Vertices[Triangles[i]._1]);
+            glNormal3fv((GLfloat*) &Normales_Vertices[Triangles[i]._2]);
+            glVertex3fv((GLfloat*) &Vertices[Triangles[i]._2]);
+        }
+    glEnd();
 
     glDisable(GL_NORMALIZE);
-    glDisable(GL_LIGHTING);
+    glDisable(GL_CULL_FACE);
 }
+
